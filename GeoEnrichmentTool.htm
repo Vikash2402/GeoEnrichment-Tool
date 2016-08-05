@@ -1,0 +1,150 @@
+﻿<!doctype html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1" />
+    <title>GeoEnrichment Tool</title>
+    <meta name="viewport" content="initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+    <link href="http://js.arcgis.com/3.15/esri/css/esri.css" rel="stylesheet" type="text/css" />
+    <link href="http://js.arcgis.com/3.15/dijit/themes/claro/claro.css" rel="stylesheet"
+        type="text/css" />
+    <script>        dojoConfig = { parseOnLoad: true }</script>
+    <script>        dojoConfig = { async: true, parseOnLoad: false }</script>
+    <script src="https://js.arcgis.com/3.14/"></script>
+    <script type="text/javascript">
+        function _getALLFeatures() {
+            generateReport();
+        }
+
+        function generateReport(reportType, reportParcel) {
+
+            var form = document.createElement("form"),
+					proxyPath = location.origin + "/GeoEnrichment-Tool/proxy.ashx?",
+                    postData = document.createElement("input"),
+                    reportInput = document.createElement("input"),
+                    studyAreasInput = document.createElement("input");
+            reportFieldsInput = document.createElement("input");
+            studyAreasOptionsInput = document.createElement("input");
+            form.method = "POST";
+			//Add your proxy path here			
+            form.action =  proxyPath+ "http://geoenrich.arcgis.com/arcgis/rest/services/World/geoenrichmentserver/GetVariables/execute";
+            form.target = "_blank";
+            postData.value = "json";
+            postData.name = "f";
+            studyAreasInput.value = document.getElementById("paramCountyTextBox").value.trim();
+            studyAreasInput.name = "sourcecountry";
+            reportFieldsInput.value = document.getElementById("paramSearchTextBox").value.trim();
+            reportFieldsInput.name = "searchtext";
+            form.appendChild(postData);
+            form.appendChild(reportInput);
+            form.appendChild(studyAreasInput);
+            form.appendChild(reportFieldsInput);
+            form.appendChild(studyAreasOptionsInput);
+            form.submit();
+        }
+
+        function _handleQueryResult_Parcels(results) {
+            var resultArray = [];
+            var idsLength = results.length;
+            var queryRecords = new esri.tasks.Query();
+            for (var len = 0; len <= idsLength; len += 3000) {
+
+                var objectIds = results.slice(len, len + 3000);
+                queryRecords.objectIds = objectIds;
+                queryRecords.returnGeometry = false;
+                queryRecords.outFields = ["OBJECTID", "PARCELID", "Acreage_Acre", "SalePrice"];
+                queryAreaTask.execute(queryRecords, function (result) {
+                    for (var cnt = 0; cnt < result.features.length; cnt++) {
+
+                        resultParcelArray[result.features[cnt].attributes.OBJECTID] = result.features[cnt];
+                        resultArray.push({
+                            ParcelId: result.features[cnt].attributes.PARCELID,
+                            SalesPrice: result.features[cnt].attributes.SalePrice,
+                            Area: result.features[cnt].attributes.Acreage_Acre
+                        });
+                    }
+                    _allValues(resultArray, results);
+                }, function (err) {
+                    console.log(err);
+                });
+            }
+
+        }
+        var allData = [];
+        function _allValues(data, results) {
+            allData.push(data);
+            if (data.length == results.length) {
+                _updateDataOnServer(data);
+            }
+        }
+
+        function _updateDataOnServer(featureArray) {
+
+
+        }
+
+        function paramTextBox_onclick() {
+
+        }
+
+    </script>
+    <style type="text/css">
+        #layerTextBox
+        {
+            height: 24px;
+            width: 796px;
+        }
+        #DBTextBox
+        {
+            width: 796px;
+        }
+        #Reset1
+        {
+            height: 23px;
+            width: 127px;
+            margin-left: 39px;
+        }
+        #Submit1
+        {
+            width: 121px;
+        }
+        #paramTextBox
+        {
+            width: 796px;
+        }
+        #paramTextBox0
+        {
+            width: 796px;
+        }
+    </style>
+</head>
+<body class="claro esriCTBody">
+    <div style="width: 112px">
+        <strong>
+            <br />
+            <br />
+            Enter URL</strong></div>
+    <br />
+    <input id="layerTextBox" value="http://geoenrich.arcgis.com/arcgis/rest/services/World/geoenrichmentserver/GetVariables/execute"
+        type="text" />
+    <br />
+    <br />
+    <br />
+    <div>
+        <strong>Enter County Name<br />
+        </strong>
+    </div>
+    <input id="paramCountyTextBox" value="US" type="text" onclick="return paramTextBox_onclick()" />
+    <br />
+    <br />
+    <div>
+        <strong>Enter search text<br />
+        </strong>
+    </div>
+    <input id="paramSearchTextBox" value="pizza" type="text" /><br />
+    <br />
+    <br />
+    <input id="Submit1" type="submit" value="submit" onclick="_getALLFeatures();" />&nbsp;
+    <input id="Reset1" type="reset" value="reset" />
+</body>
+</html>
